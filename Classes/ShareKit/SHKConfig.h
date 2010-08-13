@@ -49,6 +49,10 @@
 // Read It Later - http://readitlaterlist.com/api/?shk
 #define SHKReadItLaterKey			@""
 
+// LinkedIn - https://www.linkedin.com/secure/developer
+#define SHKLinkedInConsumerKey @""
+#define SHKLinkedInSecretKey @""
+
 // Twitter - http://dev.twitter.com/apps/new
 /*
  Important Twitter settings to get right:
