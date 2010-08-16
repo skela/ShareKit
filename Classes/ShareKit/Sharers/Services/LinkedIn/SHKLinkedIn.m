@@ -160,6 +160,7 @@
 	NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@?oauth_token=%@", authorizeURL.absoluteString, requestToken.key]];
 	
 	SHKOAuthView *auth = [[SHKOAuthView alloc] initWithURL:url delegate:self];
+	auth.title = @"LinkedIn";
 	[[SHK currentHelper] showViewController:auth];	
 	[auth release];
 }

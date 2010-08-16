@@ -48,15 +48,34 @@
     [super dealloc];
 }
 
-- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil 
+- (id)init
 {
-    if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) 
-	{		
+	if ((self = [super init]))
+	{	
+		self.title = @"LinkedIn";
 		self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
 																							  target:self
 																							  action:@selector(cancel)];
 		
-		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Send to LinkedIn"
+		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Send"
+																				  style:UIBarButtonItemStyleDone
+																				 target:self
+																				 action:@selector(save)];
+    }
+    return self;
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil 
+{
+    if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) 
+	{		
+		self.title = @"LinkedIn";
+		
+		self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
+																							  target:self
+																							  action:@selector(cancel)];
+		
+		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Send"
 																				  style:UIBarButtonItemStyleDone
 																				 target:self
 																				 action:@selector(save)];
@@ -204,6 +223,7 @@
 - (void)cancel
 {	
 	[[SHK currentHelper] hideCurrentViewControllerAnimated:YES];
+	//[self.navigationController popViewControllerAnimated:YES];
 }
 
 - (void)save
@@ -228,9 +248,22 @@
 		return;
 	}
 	
-	//[(SHKTwitter *)delegate sendForm:self];
+	if ([textView isFirstResponder])
+		[textView resignFirstResponder];
 	
-	[[SHK currentHelper] hideCurrentViewControllerAnimated:YES];
+	//[(SHKLinkedIn *)delegate sendForm:self];
+	NSString *text;
+	
+	if (textView.selectedRange.length > 0)
+		text = [textView.text substringWithRange:textView.selectedRange];
+	else
+		text = textView.text;
+	
+	SHKItem *item = [SHKItem text:text];
+
+	[NSClassFromString(@"SHKLinkedIn") performSelector:@selector(shareItem:) withObject:item];	
+	
+	//[[SHK currentHelper] hideCurrentViewControllerAnimated:YES];
 }
 
 @end
