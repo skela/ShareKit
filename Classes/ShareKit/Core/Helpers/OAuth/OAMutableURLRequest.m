@@ -148,13 +148,13 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
                                       withSecret:[NSString stringWithFormat:@"%@&%@",
 												  [consumer.secret URLEncodedString],
                                                   [token.secret URLEncodedString]]];
-    
+	
     // set OAuth headers
     NSString *oauthToken;
     if ([token.key isEqualToString:@""])
         oauthToken = @""; // not used on Request Token transactions
     else
-        oauthToken = [NSString stringWithFormat:@"oauth_token=\"%@\", ", [token.key URLEncodedString]];
+       oauthToken = [NSString stringWithFormat:@"oauth_token=\"%@\", ", [token.key URLEncodedString]];
 	
 	NSMutableString *extraParameters = [NSMutableString string];
 	
@@ -212,14 +212,23 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 	[parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_nonce" value:nonce] URLEncodedNameValuePair]];
 	[parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_version" value:@"1.0"] URLEncodedNameValuePair]];
     
-    if (![token.key isEqualToString:@""]) {
+    if (![token.key isEqualToString:@""])
         [parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_token" value:token.key] URLEncodedNameValuePair]];
-    }
+
+	// To make it work with LinkedIn's (3. Request the Access Token)
+	if ([extraOAuthParameters objectForKey:@"oauth_verifier"]!=nil)
+        [parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_verifier" value:[extraOAuthParameters objectForKey:@"oauth_verifier"]] URLEncodedNameValuePair]];
     
-    for (OARequestParameter *param in [self parameters]) {
-        [parameterPairs addObject:[param URLEncodedNameValuePair]];
-    }
-    
+	if (realm!=nil && [realm isEqualToString:@"api.linkedin.com"])
+	{
+		
+	}
+	else
+	{
+		for (OARequestParameter *param in [self parameters])
+			[parameterPairs addObject:[param URLEncodedNameValuePair]];
+	}
+    	
     NSArray *sortedPairs = [parameterPairs sortedArrayUsingSelector:@selector(compare:)];
     NSString *normalizedRequestParameters = [sortedPairs componentsJoinedByString:@"&"];
     
@@ -229,7 +238,7 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 					 [[[self URL] URLStringWithoutQuery] URLEncodedString],
 					 [normalizedRequestParameters URLEncodedString]];
 	
-	SHKLog(@"OAMutableURLRequest parameters %@", normalizedRequestParameters);
+	NSLog(@"OAMutableURLRequest parameters %@", normalizedRequestParameters);
 	
 	return ret;
 }

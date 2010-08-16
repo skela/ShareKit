@@ -114,6 +114,30 @@
 {	
 	[self stopSpinner];
 	
+	// TODO: move this logic into some linkedin subclassed objects instead.
+	if ([webView.request.URL.host isEqualToString:@"www.linkedin.com"])
+	{
+		NSString *myText = [webView stringByEvaluatingJavaScriptFromString:@"document.documentElement.textContent"];
+		NSRange range; range.location=-1; range.length=-1;
+		range = [myText rangeOfString:@"You have successfully authorized Waitrose Wine. Please return to your application and enter the following security code to grant access:\n"];
+	
+		if (range.location != NSNotFound)
+		{
+			NSString *sub = [myText substringFromIndex:range.location+@"You have successfully authorized Waitrose Wine. Please return to your application and enter the following security code to grant access:\n ".length];
+			NSRange range2 = [sub rangeOfString:@"\n"];
+			if (range2.location!=NSNotFound)
+			{
+				NSString *code = [sub substringToIndex:range2.location];
+				NSLog(@"returned code was %@",code);
+				NSMutableDictionary *queryParams=[NSMutableDictionary dictionaryWithCapacity:0];
+				[queryParams setObject:[NSString stringWithString:code] forKey:@"oauth_verifier"];
+				[delegate tokenAuthorizeView:self didFinishWithSuccess:YES queryParams:queryParams error:nil];
+				self.delegate = nil;
+				
+			}
+		}
+	}
+		 
 	// Extra sanity check for Twitter OAuth users to make sure they are using BROWSER with a callback instead of pin based auth
 	if ([webView.request.URL.host isEqualToString:@"twitter.com"] && [webView stringByEvaluatingJavaScriptFromString:@"document.getElementById('oauth_pin').innerHTML"].length)
 		[delegate tokenAuthorizeView:self didFinishWithSuccess:NO queryParams:nil error:[SHK error:@"Your SHKTwitter config is incorrect.  You must set your application type to Browser and define a callback url.  See SHKConfig.h for more details"]];

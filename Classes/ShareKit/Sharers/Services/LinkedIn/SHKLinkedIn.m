@@ -45,10 +45,10 @@
 		self.consumerKey = SHKLinkedInConsumerKey;		
 		self.secretKey = SHKLinkedInSecretKey;
 		self.authorizeCallbackURL = [NSURL URLWithString:@"http://linkedin_oauth/success"];
-		
+		//self.authorizeCallbackURL = [NSURL URLWithString:@"https://www.linkedin.com/uas/oauth/authorize/submit"];
 		self.requestURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/requestToken"];
 		self.authorizeURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/authorize"];
-		self.accessURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/ouath/accessToken"];
+		self.accessURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/accessToken"];
 		
 		self.signatureProvider = [[[OAHMAC_SHA1SignatureProvider alloc] init] autorelease];
 	}	
@@ -75,7 +75,7 @@
 }
 
 #pragma mark -
-#pragma mark Authorization
+#pragma mark Authorization (Token Request)
 
 - (void)tokenRequest
 {
@@ -151,17 +151,44 @@
 					   otherButtonTitles:nil] autorelease] show];
 }
 
-- (void)tokenAccessModifyRequest:(OAMutableURLRequest *)oRequest
-{
-	if (pendingAction == SHKPendingRefreshToken)
-	{
-		if (accessToken.sessionHandle != nil)
-			[oRequest setOAuthParameterName:@"oauth_session_handle" withValue:accessToken.sessionHandle];	
-	}
-		
-	else
-		[oRequest setOAuthParameterName:@"oauth_verifier" withValue:[authorizeResponseQueryVars objectForKey:@"oauth_verifier"]];
+#pragma mark -
+#pragma mark Authorization (Token Authorise)
+
+- (void)tokenAuthorize
+{	
+	NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@?oauth_token=%@", authorizeURL.absoluteString, requestToken.key]];
+	
+	SHKOAuthView *auth = [[SHKOAuthView alloc] initWithURL:url delegate:self];
+	[[SHK currentHelper] showViewController:auth];	
+	[auth release];
 }
+
+- (void)tokenAuthorizeView:(SHKOAuthView *)authView didFinishWithSuccess:(BOOL)success queryParams:(NSMutableDictionary *)queryParams error:(NSError *)error;
+{
+	[[SHK currentHelper] hideCurrentViewControllerAnimated:YES];
+	
+	if (!success)
+	{
+		[[[[UIAlertView alloc] initWithTitle:SHKLocalizedString(@"Authorize Error")
+									 message:error!=nil?[error localizedDescription]:SHKLocalizedString(@"There was an error while authorizing")
+									delegate:nil
+						   cancelButtonTitle:SHKLocalizedString(@"Close")
+						   otherButtonTitles:nil] autorelease] show];
+	}	
+	
+	else 
+	{
+		self.authorizeResponseQueryVars = queryParams;
+		
+		[self tokenAccess];
+	}
+}
+
+- (void)tokenAuthorizeCancelledView:(SHKOAuthView *)authView
+{
+	[[SHK currentHelper] hideCurrentViewControllerAnimated:YES];	
+}
+
 
 - (BOOL)handleResponse:(SHKRequest *)aRequest
 {
@@ -176,6 +203,71 @@
 	return YES;
 }
 
+
+#pragma mark -
+#pragma mark Token Access
+
+- (void)tokenAccess:(BOOL)refresh
+{
+	if (!refresh)
+		[[SHKActivityIndicator currentIndicator] displayActivity:SHKLocalizedString(@"Authenticating...")];
+	
+    OAMutableURLRequest *oRequest = [[OAMutableURLRequest alloc] initWithURL:accessURL
+																	consumer:consumer
+																	   token:(refresh ? accessToken : requestToken)
+																	   realm:nil   // our service provider doesn't specify a realm
+														   signatureProvider:signatureProvider]; // use the default method, HMAC-SHA1
+	
+    [oRequest setHTTPMethod:@"GET"];
+	
+	[self tokenAccessModifyRequest:oRequest];
+	
+    OAAsynchronousDataFetcher *fetcher = [OAAsynchronousDataFetcher asynchronousFetcherWithRequest:oRequest
+																						  delegate:self
+																				 didFinishSelector:@selector(tokenAccessTicket:didFinishWithData:)
+																				   didFailSelector:@selector(tokenAccessTicket:didFailWithError:)];
+	[fetcher start];
+	[oRequest release];
+}
+
+- (void)tokenAccessModifyRequest:(OAMutableURLRequest *)oRequest
+{
+	if (pendingAction == SHKPendingRefreshToken)
+	{
+		if (accessToken.sessionHandle != nil)
+			[oRequest setOAuthParameterName:@"oauth_session_handle" withValue:accessToken.sessionHandle];	
+	}
+	
+	else
+		[oRequest setOAuthParameterName:@"oauth_verifier" withValue:[authorizeResponseQueryVars objectForKey:@"oauth_verifier"]];	
+}
+
+- (void)tokenAccessTicket:(OAServiceTicket *)ticket didFinishWithData:(NSData *)data 
+{
+	if (SHKDebugShowLogs) // check so we don't have to alloc the string with the data if we aren't logging
+		SHKLog(@"tokenAccessTicket Response Body: %@", [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
+	
+	NSLog(@"tokenaccessticket response body: %@",[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
+	
+	[[SHKActivityIndicator currentIndicator] hide];
+	
+	if (ticket.didSucceed) 
+	{
+		NSString *responseBody = [[NSString alloc] initWithData:data
+													   encoding:NSUTF8StringEncoding];
+		self.accessToken = [[OAToken alloc] initWithHTTPResponseBody:responseBody];
+		[responseBody release];
+		
+		[self storeAccessToken];
+		
+		[self tryPendingAction];
+	}
+	
+	
+	else
+		// TODO - better error handling here
+		[self tokenAccessTicket:ticket didFailWithError:[SHK error:SHKLocalizedString(@"There was a problem requesting access from %@", [self sharerTitle])]];
+}
 
 #pragma mark -
 #pragma mark Share Form
@@ -205,32 +297,14 @@
 		OAMutableURLRequest *oRequest = [[OAMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"http://api.linkedin.com/v1/people/~/current-status"]
 																		consumer:consumer
 																		   token:accessToken
-																		   realm:nil
+																		   realm:@"api.linkedin.com"
 															   signatureProvider:nil];
 		
 		[oRequest setHTTPMethod:@"PUT"];
 		
-		OARequestParameter *urlParam = [OARequestParameter requestParameterWithName:@"url"
-																			  value:[item.URL.absoluteString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-
-		OARequestParameter *descParam = [OARequestParameter requestParameterWithName:@"current-status"
-																			value:SHKStringOrBlank(item.title)];
-	
-		/*
-		OARequestParameter *descParam = [OARequestParameter requestParameterWithName:@"description"
-																			   value:SHKStringOrBlank(item.title)];
-		*/
-		OARequestParameter *tagsParam = [OARequestParameter requestParameterWithName:@"tags"
-																			   value:SHKStringOrBlank(item.tags)];
-		
-		OARequestParameter *extendedParam = [OARequestParameter requestParameterWithName:@"extended"
-																				   value:SHKStringOrBlank(item.text)];
-		
-		OARequestParameter *sharedParam = [OARequestParameter requestParameterWithName:@"shared"
-																				 value:[item customBoolForSwitchKey:@"shared"]?@"yes":@"no"];
-		
-		
-		[oRequest setParameters:[NSArray arrayWithObjects:descParam, extendedParam, sharedParam, tagsParam, urlParam, nil]];
+		NSString *httpBody = [NSString stringWithFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><current-status>%@</current-status>",item.text];
+		//NSString *httpBody = [NSString stringWithFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><current-status>%@</current-status>",@"testing 123"];
+		[oRequest setHTTPBody:[httpBody dataUsingEncoding:NSUTF8StringEncoding]];
 		
 		OAAsynchronousDataFetcher *fetcher = [OAAsynchronousDataFetcher asynchronousFetcherWithRequest:oRequest
 							 delegate:self
@@ -266,14 +340,16 @@
 		// TODO - I'd prefer to use regex for this but that would require OS4 or adding a regex library
 		NSError *error;
 		NSString *body = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
-				
+		NSLog(@"status update response: %@",body);
+		
 		// Expired token
 		if ([body rangeOfString:@"token_expired"].location != NSNotFound)
 		{
 			[self refreshToken];				
 			return;
 		}
-		
+		else if ([body rangeOfString:@"Can not set member current status because number of status text exceeds the limit"].location != NSNotFound)
+			error = [SHK error:SHKLocalizedString(@"The LinkedIn status update failed because the message was too long.")];
 		else
 			error = [SHK error:SHKLocalizedString(@"There was a problem saving to LinkedIn.")];
 		
