@@ -44,17 +44,11 @@
 	{		
 		self.consumerKey = SHKLinkedInConsumerKey;		
 		self.secretKey = SHKLinkedInSecretKey;
- 		//self.authorizeCallbackURL = [NSURL URLWithString:SHKLinkedInCallbackUrl];// HOW-TO: In your Twitter application settings, use the "Callback URL" field.  If you do not have this field in the settings, set your application type to 'Browser'.
-		self.authorizeCallbackURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/requestToken"];
-
+		self.authorizeCallbackURL = [NSURL URLWithString:@"http://linkedin_oauth/success"];
+		
 		self.requestURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/requestToken"];
 		self.authorizeURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/oauth/authorize"];
 		self.accessURL = [NSURL URLWithString:@"https://api.linkedin.com/uas/ouath/accessToken"];
-		
-		// You do not need to edit these, they are the same for everyone
-	    //self.authorizeURL = [NSURL URLWithString:@"https://api.login.yahoo.com/oauth/v2/request_auth"];
-	    //self.requestURL = [NSURL URLWithString:@"https://api.login.yahoo.com/oauth/v2/get_request_token"];
-	    //self.accessURL = [NSURL URLWithString:@"https://api.login.yahoo.com/oauth/v2/get_token"];
 		
 		self.signatureProvider = [[[OAHMAC_SHA1SignatureProvider alloc] init] autorelease];
 	}	
@@ -90,9 +84,11 @@
     OAMutableURLRequest *oRequest = [[OAMutableURLRequest alloc] initWithURL:requestURL
 																	consumer:consumer
 																	   token:nil   // we don't have a Token yet
-																	   realm:@"http://api.linkedin.com/"
+																	   realm:nil
 														   signatureProvider:signatureProvider];
+
 	
+
 	
 	[oRequest setHTTPMethod:@"POST"];
 	
@@ -106,7 +102,6 @@
 	[oRequest release];
 }
 
-
 - (BOOL)isAuthorized
 {		
 	return [self restoreAccessToken];
@@ -119,22 +114,41 @@
 
 - (void)tokenRequestModifyRequest:(OAMutableURLRequest *)oRequest
 {
-	//[oRequest setOAuthParameterName:@"oauth_callback" withValue:authorizeCallbackURL.absoluteString];
-	//[oRequest setOAuthParameterName:@"oauth_callback" withValue:@"requestToken"];
-	[oRequest setOAuthParameterName:@"oauth_callback" withValue:authorizeCallbackURL.absoluteString];
 	
+}
+
+- (void)tokenRequestTicket:(OAServiceTicket *)ticket didFinishWithData:(NSData *)data 
+{
+	if (SHKDebugShowLogs) // check so we don't have to alloc the string with the data if we aren't logging
+		SHKLog(@"tokenRequestTicket Response Body: %@", [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
 	
-	/*
-	OARequestParameter *oauth_callback = [[[OARequestParameter alloc] initWithName:@"oauth_callback"
-																	   value:SHKEncode(@"http://localhost/oauth_callback")] autorelease];
+	NSLog(@"Token request response body %@",[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
+	[[SHKActivityIndicator currentIndicator] hide];
 	
-	OARequestParameter *oauth_consumer_key = [[[OARequestParameter alloc] initWithName:@"oauth_consumer_key"
-																			 value:SHKEncode(self.consumerKey)] autorelease];
-			
-	OARequestParameter *oauth_version = [[[OARequestParameter alloc] initWithName:@"oauth_version"
-																			  value:SHKEncode(@"1.0")] autorelease];
+	if (ticket.didSucceed) 
+	{
+		NSString *responseBody = [[NSString alloc] initWithData:data
+													   encoding:NSUTF8StringEncoding];
+		self.requestToken = [[OAToken alloc] initWithHTTPResponseBody:responseBody];
+		[responseBody release];
+		
+		[self tokenAuthorize];
+	}
 	
-	[oRequest setParameters:[NSArray arrayWithObjects:oauth_callback,oauth_consumer_key,oauth_version,nil]];*/
+	else
+		// TODO - better error handling here
+		[self tokenRequestTicket:ticket didFailWithError:[SHK error:SHKLocalizedString(@"There was a problem requesting authorization from %@"), [self sharerTitle]]];
+}
+
+- (void)tokenRequestTicket:(OAServiceTicket *)ticket didFailWithError:(NSError*)error
+{
+	[[SHKActivityIndicator currentIndicator] hide];
+	
+	[[[[UIAlertView alloc] initWithTitle:SHKLocalizedString(@"Request Error")
+								 message:error!=nil?[error localizedDescription]:SHKLocalizedString(@"There was an error while sharing")
+								delegate:nil
+					   cancelButtonTitle:SHKLocalizedString(@"Close")
+					   otherButtonTitles:nil] autorelease] show];
 }
 
 - (void)tokenAccessModifyRequest:(OAMutableURLRequest *)oRequest

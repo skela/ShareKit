@@ -214,6 +214,8 @@
 	if (SHKDebugShowLogs) // check so we don't have to alloc the string with the data if we aren't logging
 		SHKLog(@"tokenAccessTicket Response Body: %@", [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
 	
+	NSLog(@"tokenaccessticket response body: %@",[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease]);
+	
 	[[SHKActivityIndicator currentIndicator] hide];
 	
 	if (ticket.didSucceed) 

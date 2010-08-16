@@ -177,6 +177,11 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 							 extraParameters];
 	
     [self setValue:oauthHeader forHTTPHeaderField:@"Authorization"];
+		
+	NSDictionary *headers=[self allHTTPHeaderFields];
+	NSLog(@"Token request headers %@",[headers description]);
+
+	NSLog(@"desc %@",[self description]);
 }
 
 #pragma mark -
