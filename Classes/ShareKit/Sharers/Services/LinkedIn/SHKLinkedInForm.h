@@ -1,10 +1,10 @@
 //
-//  SHKLinkedIn.h
+//  SHKLinkedInForm.h
 //  ShareKit
 //
-//  Created by Aleksander George Slater on 13/08/10.
-//  Based on SHKDelicous.m
-//  Created by Nathan Weiner on 6/21/10.
+//  Created by Aleksander George Slater on 16/08/10.
+//  Based on SHKTwitterForm.h
+//  Created by Nathan Weiner on 6/22/10.
 //
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,17 +27,22 @@
 //
 //
 
-#import <Foundation/Foundation.h>
-#import "SHKOAuthSharer.h"
+#import <UIKit/UIKit.h>
 
-@interface SHKLinkedIn : SHKOAuthSharer 
+
+@interface SHKLinkedInForm : UIViewController <UITextViewDelegate>
 {
-
+	id delegate;
+	UITextView *textView;
+	UILabel *counter;
+	BOOL hasAttachment;
 }
 
-- (BOOL)handleResponse:(SHKRequest *)aRequest;
+@property (nonatomic, retain) id delegate;
+@property (nonatomic, retain) UITextView *textView;
+@property (nonatomic, retain) UILabel *counter;
+@property BOOL hasAttachment;
 
-- (void)sendTicket:(OAServiceTicket *)ticket didFinishWithData:(NSData *)data;
-- (void)sendTicket:(OAServiceTicket *)ticket didFailWithError:(NSError*)error;
+- (void)layoutCounter;
 
 @end

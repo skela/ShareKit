@@ -89,6 +89,7 @@
 		43D1DEF011D5CDD200550D75 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43D1DEEF11D5CDD200550D75 /* SystemConfiguration.framework */; };
 		43EF406E11D3FFF800B1F700 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43EF406D11D3FFF800B1F700 /* Security.framework */; };
 		C6C3EF231219253F00B87121 /* SHKLinkedIn.m in Sources */ = {isa = PBXBuildFile; fileRef = C6C3EF211219253F00B87121 /* SHKLinkedIn.m */; };
+		C6C3F18F12196B3900B87121 /* SHKLinkedInForm.m in Sources */ = {isa = PBXBuildFile; fileRef = C6C3F18E12196B3900B87121 /* SHKLinkedInForm.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -248,6 +249,8 @@
 		8D1107310486CEB800E47090 /* ShareKit-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "ShareKit-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		C6C3EF211219253F00B87121 /* SHKLinkedIn.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SHKLinkedIn.m; path = LinkedIn/SHKLinkedIn.m; sourceTree = "<group>"; };
 		C6C3EF221219253F00B87121 /* SHKLinkedIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SHKLinkedIn.h; path = LinkedIn/SHKLinkedIn.h; sourceTree = "<group>"; };
+		C6C3F18D12196B3900B87121 /* SHKLinkedInForm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SHKLinkedInForm.h; path = LinkedIn/SHKLinkedInForm.h; sourceTree = "<group>"; };
+		C6C3F18E12196B3900B87121 /* SHKLinkedInForm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SHKLinkedInForm.m; path = LinkedIn/SHKLinkedInForm.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -730,6 +733,8 @@
 			children = (
 				C6C3EF211219253F00B87121 /* SHKLinkedIn.m */,
 				C6C3EF221219253F00B87121 /* SHKLinkedIn.h */,
+				C6C3F18D12196B3900B87121 /* SHKLinkedInForm.h */,
+				C6C3F18E12196B3900B87121 /* SHKLinkedInForm.m */,
 			);
 			name = LinkedIn;
 			sourceTree = "<group>";
@@ -869,6 +874,7 @@
 				43B934B511FE682600C9D3F3 /* SHKFBStreamDialog.m in Sources */,
 				432B147C11FF4B0700291B37 /* SHKPhotoAlbum.m in Sources */,
 				C6C3EF231219253F00B87121 /* SHKLinkedIn.m in Sources */,
+				C6C3F18F12196B3900B87121 /* SHKLinkedInForm.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

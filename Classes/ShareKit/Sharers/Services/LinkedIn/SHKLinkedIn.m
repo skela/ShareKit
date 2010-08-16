@@ -1,9 +1,10 @@
 //
-//  SHKDelicious.m
+//  SHKLinkedIn.m
 //  ShareKit
 //
 //  Created by Aleksander George Slater on 13/08/10.
-
+//  Based on SHKDelicous.m
+//  Created by Nathan Weiner on 6/21/10.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
